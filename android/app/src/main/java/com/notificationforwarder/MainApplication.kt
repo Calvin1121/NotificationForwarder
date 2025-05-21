@@ -13,6 +13,8 @@ import com.facebook.react.soloader.OpenSourceMergedSoMapping
 import com.facebook.soloader.SoLoader
 
 class MainApplication : Application(), ReactApplication {
+  // 添加通知服务引用
+  private var notificationService: NotificationService? = null
 
   override val reactNativeHost: ReactNativeHost =
       object : DefaultReactNativeHost(this) {
@@ -20,6 +22,7 @@ class MainApplication : Application(), ReactApplication {
             PackageList(this).packages.apply {
               // Packages that cannot be autolinked yet can be added manually here, for example:
               // add(MyReactNativePackage())
+              add(NotificationPackage())
             }
 
         override fun getJSMainModuleName(): String = "index"
@@ -40,5 +43,18 @@ class MainApplication : Application(), ReactApplication {
       // If you opted-in for the New Architecture, we load the native entry point for this app.
       load()
     }
+    initializeNotificationService()
   }
+
+  /**
+    * 初始化通知监听服务
+    */
+  private fun initializeNotificationService() {
+      notificationService = NotificationService()
+  }
+
+  /**
+    * 获取通知服务实例
+    */
+  fun getNotificationService(): NotificationService? = notificationService
 }
