@@ -6,6 +6,11 @@ import com.facebook.react.bridge.*
 import com.facebook.react.modules.core.DeviceEventManagerModule
 
 class NotificationModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
+
+    init {
+        currentReactContext = reactContext
+    }
+
     override fun getName(): String = "NotificationModule"
 
     @ReactMethod
@@ -25,15 +30,7 @@ class NotificationModule(reactContext: ReactApplicationContext) : ReactContextBa
         reactApplicationContext.startActivity(intent)
     }
 
-    fun sendNotificationEvent(title: String, message: String, packageName: String) {
-        val params = Arguments.createMap().apply {
-            putString("title", title)
-            putString("message", message)
-            putString("packageName", packageName)
-        }
-        
-        reactApplicationContext
-            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
-            .emit("onNotificationPosted", params)
+    companion object {
+        var currentReactContext: ReactContext? = null
     }
 }
