@@ -18,12 +18,17 @@ class NotificationService : NotificationListenerService() {
             val title = extras.getString("android.title", "")
             val text = extras.getString("android.text", "")
             val postTime = sbn.postTime
+            val notifyId = sbn.id
+            val notifyKey = sbn.key
 
             val params: WritableMap = Arguments.createMap().apply {
                 putString("packageName", packageName)
                 putString("title", title)
                 putString("message", text)
                 putDouble("timestamp", postTime.toDouble())
+                putDouble("notifyId", notifyId.toDouble())
+                putString("notifyKey", notifyKey)
+                putString("extras", extras.toString())
             }
 
             currentReactContext
