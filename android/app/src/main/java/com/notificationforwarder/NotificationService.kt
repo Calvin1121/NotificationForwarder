@@ -28,7 +28,7 @@ class NotificationService : NotificationListenerService() {
                 putDouble("timestamp", postTime.toDouble())
                 putDouble("notifyId", notifyId.toDouble())
                 putString("notifyKey", notifyKey)
-                putString("extras", extras.toString())
+                // putString("extras", extras.toString())
             }
 
             currentReactContext
