@@ -14,21 +14,23 @@ class NotificationService : NotificationListenerService() {
         try {
             val packageName = sbn.packageName ?: return
             val extras = sbn.notification.extras ?: return
-
             val title = extras.getString("android.title", "")
             val text = extras.getString("android.text", "")
             val postTime = sbn.postTime
-            val notifyId = sbn.id
-            val notifyKey = sbn.key
+            val sbnId = sbn.id
+            val sbnKey = sbn.key
+            val sbnTag = sbn.tag
 
             val params: WritableMap = Arguments.createMap().apply {
                 putString("packageName", packageName)
                 putString("title", title)
                 putString("message", text)
                 putDouble("timestamp", postTime.toDouble())
-                putDouble("notifyId", notifyId.toDouble())
-                putString("notifyKey", notifyKey)
-                // putString("extras", extras.toString())
+                putDouble("sbnId", sbnId.toDouble())
+                putString("sbnKey", sbnKey)
+                putString("sbnTag", sbnTag)
+                // putInt("sbnUserId", UserHandle.getUserId(sbn.uid))
+                putString("notificationString", sbn.notification.toString())
             }
 
             currentReactContext

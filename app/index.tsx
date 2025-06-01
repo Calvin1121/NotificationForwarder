@@ -4,10 +4,12 @@ import { useEffect, useRef, useState } from "react"
 import { SafeAreaView } from "react-native-safe-area-context"
 import useSWRMutation from "swr/mutation"
 import dayjs from "dayjs"
-import { get } from "lodash"
+import { get, uniqBy } from "lodash"
 import notifyApi from "../api/notify"
 import { fetcher } from "../utils/fetcher"
 import { DATE_FORMAT } from "../const"
+import "../global.css"
+import { generateHashId } from "../utils/util"
 const { NotificationModule } = NativeModules
 
 interface Notify {
@@ -17,6 +19,7 @@ interface Notify {
     packageName: string
     timestamp: number
     title: string
+    hashId?: string
 }
 
 export const NotifyItem = ({ item }: { item: Notify }) => {
@@ -27,21 +30,26 @@ export const NotifyItem = ({ item }: { item: Notify }) => {
         { label: '内容', value: 'message' },
     ]
     console.info(item)
-    return <>
+    return <View className="py-2 px-4">
         {mapOrders.map((ordersItem) => {
             const value = get(item, ordersItem.value)
-            return <View key={ordersItem.value}>
-                <Text>{ordersItem.label}</Text>
-                <Text>{ordersItem.onContent?.(value) ?? value}</Text>
+            return <View className="flex flex-row items-center" key={ordersItem.value}>
+                <View><Text>{ordersItem.label}:</Text></View>
+                <View className="flex-1"><Text>{ordersItem.onContent?.(value) ?? value}</Text></View>
             </View>
         })}
-    </>
+    </View>
 }
 
 export default function Home() {
+    const TARGET_PACKAGENAMES = [
+        'com.gworks.oneapp.works'
+    ]
     const { isNotifyPermitted: isPermitted } = useStates()
     const notifySubscription = useRef<EmitterSubscription>(null)
-    const [notifys, setNotifys] = useState<any[]>([])
+    // const[map, {set, setAll, remove, reset}] = useMap({})
+    const [newNotify, setNewNotify] = useState<Notify|null>()
+    const [notifys, setNotifys] = useState<Notify[]>([])
     const { data, trigger } = useSWRMutation(notifyApi.notifyLineWorks, async (url: string, { arg }: { arg: Record<string, any> }) =>
         fetcher(url, { method: 'post', body: JSON.stringify(arg) })
     )
@@ -50,7 +58,15 @@ export default function Home() {
             const eventEmitter = new NativeEventEmitter();
             notifySubscription.current = eventEmitter.addListener('onNotificationPosted', data => {
                 console.info(data)
-                setNotifys((prev) => [...prev, data])
+                if (TARGET_PACKAGENAMES.includes(data.packageName)) {
+                    const hashId = generateHashId(data)
+                    const _data = Object.assign(data, { hashId })
+                    setNewNotify(prev => {
+                        if (prev?.hashId !== hashId)
+                            return _data
+                        return prev
+                    })
+                }
             })
         }
         if (!isPermitted && notifySubscription.current) {
@@ -58,19 +74,28 @@ export default function Home() {
         }
     }, [isPermitted])
 
+    useEffect(() => {
+        if (newNotify?.hashId) {
+            trigger(newNotify)
+            setNotifys(prev => uniqBy([newNotify, ...prev], 'hashId'))
+            setNewNotify(null)
+        }
+    }, [newNotify])
+
     const notifyList = <FlatList
         renderItem={({ item }: { item: Notify }) => <NotifyItem item={item} />}
-        keyExtractor={item => `${item.packageName}-${item.timestamp}`}
+        keyExtractor={(item, index) => `${item.hashId ?? index}`}
         data={notifys} />
 
     const onOpenSettings = () => {
         NotificationModule.openNotificationSettings()
     }
-    return (<SafeAreaView style={styles.container}>
+    return (<SafeAreaView className="flex flex-1 overflow-hidden flex-col">
         <StatusBar barStyle={'dark-content'} />
-        <View style={!isPermitted ? styles.settings : styles.content}>
+        <View className={isPermitted && !!notifys?.length? 'flex-1':'flex flex-1 items-center justify-center' }>
             {!isPermitted && <Button onPress={onOpenSettings} title="Open Settings"></Button>}
-            {isPermitted && notifyList}
+            {isPermitted && !notifys?.length && <Text>No any Notifies</Text>}
+            {isPermitted && !!notifys?.length && notifyList}
         </View>
     </SafeAreaView>)
 }
