@@ -30,7 +30,7 @@ class NotificationService : NotificationListenerService() {
                 putString("sbnKey", sbnKey)
                 putString("sbnTag", sbnTag)
                 // putInt("sbnUserId", UserHandle.getUserId(sbn.uid))
-                putString("notificationString", sbn.notification.toString())
+                // putString("notificationString", sbn.notification.toString())
             }
 
             currentReactContext

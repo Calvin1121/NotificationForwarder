@@ -1,6 +1,10 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { AppStateStatus, NativeModules, AppState as RNAppState } from "react-native";
-const { NotificationModule } = NativeModules
+import { AppStateStatus, AppState as RNAppState } from "react-native";
+import { checkNotificationPermission } from "./utils/native";
+import { DEFAUTL_INSTALLED_APPS } from "./const";
+import { uniqBy } from "lodash";
+import { InstalledApp, Notify } from "./native";
+
 
 enum APP_STATUS {
     Active = 'active',
@@ -12,10 +16,11 @@ enum APP_STATUS {
 
 type InStates = Partial<IAppContextState> | ((states: IAppContextState) => IAppContextState)
 
-
 interface IAppContextState {
     status: APP_STATUS,
     isNotifyPermitted: boolean
+    installedApps: InstalledApp[],
+    notify: Notify | null
 }
 
 interface IAppContext {
@@ -25,7 +30,9 @@ interface IAppContext {
 
 const States: IAppContextState = {
     status: APP_STATUS.Active,
-    isNotifyPermitted: false
+    isNotifyPermitted: false,
+    installedApps: DEFAUTL_INSTALLED_APPS,
+    notify: null
 }
 
 
@@ -33,10 +40,6 @@ export const AppContext = createContext<IAppContext>({
     states: States,
     updateStates: () => { }
 })
-
-async function checkNotificationPermission(): Promise<boolean> {
-    return await NotificationModule.checkNotificationPermission()
-}
 
 export function AppProvider({ children }: { children: ReactNode }) {
     const [states, setStates] = useState({ ...States })
@@ -62,11 +65,16 @@ export function useStates() {
     const { states, updateStates } = useContext(AppContext)
     const isAppVisible = useMemo(() => states.status === APP_STATUS.Active, [states.status])
     const isNotifyPermitted = useMemo(() => states.isNotifyPermitted, [states.isNotifyPermitted])
+    const installedApps = useMemo(() => uniqBy([...DEFAUTL_INSTALLED_APPS, ...states.installedApps], 'packageName') , [states.installedApps])
+    const installedAppNameMap = useMemo(() => new Map(installedApps.map((item) => [item.packageName, item.appName])), [installedApps])
+    const notify = useMemo(() => states.notify ?? null , [states.notify])
     return {
         isAppVisible,
         isNotifyPermitted,
+        installedApps,
+        installedAppNameMap,
+        notify,
         states,
         updateStates,
-        checkNotificationPermission
     }
 }
