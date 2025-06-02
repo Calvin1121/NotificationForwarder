@@ -12,7 +12,7 @@ export const InitialApp = () => {
   const { trigger } = useSWRMutation(notifyApi.notifyLineWorks, async (url: string, { arg }: { arg: Record<string, any> }) =>
     fetcher(url, { method: 'post', body: JSON.stringify(arg) })
   );
-  const { updateStates, isNotifyPermitted: isPermitted, installedApps, notify } = useStates();
+  const { updateStates, isNotifyPermitted: isPermitted, listeningApps, notify } = useStates();
   const initNotificationPermission = async () => {
     const isNotifyPermitted = await checkNotificationPermission()
     updateStates({ isNotifyPermitted })
@@ -25,10 +25,10 @@ export const InitialApp = () => {
 
   useEffect(() => {
     let notifySubscription: EmitterSubscription
-    if (isPermitted && !!installedApps?.length) {
+    if (isPermitted && !!listeningApps?.length) {
       const eventEmitter = new NativeEventEmitter();
       notifySubscription = eventEmitter.addListener("onNotificationPosted", (data: Notify) => {
-        if (installedApps.find(app => app.packageName === data.packageName) && data.sbnTag) {
+        if (listeningApps.includes(data.packageName) && data.sbnTag) {
           const hashId = generateHashId(data);
           const _data = Object.assign(data, { hashId });
           updateStates(prev => {
@@ -43,11 +43,11 @@ export const InitialApp = () => {
     return () => {
       notifySubscription?.remove?.()
     }
-  }, [isPermitted, installedApps])
+  }, [isPermitted, listeningApps])
 
   useEffect(() => {
-    // if(notify?.hashId) 
-      // trigger(notify)
+    if(notify?.hashId) 
+      trigger(notify)
   }, [notify, trigger])
 
   useEffect(() => {

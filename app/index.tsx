@@ -10,6 +10,7 @@ import { useStates } from "../App.provider"
 import IconFont from './_iconfont';
 import { openNotificationSettings } from "../utils/native"
 import { Notify } from "../native"
+import Container from "./_components/container"
 
 export const NotifyItem = ({ item }: { item: Notify }) => {
     const { installedAppNameMap } = useStates()
@@ -22,7 +23,7 @@ export const NotifyItem = ({ item }: { item: Notify }) => {
     return <View className="py-2 px-4">
         {mapOrders.map((ordersItem) => {
             const value = get(item, ordersItem.value)
-            return <View className="flex flex-row items-center" key={ordersItem.value}>
+            return <View className="flex flex-row" key={ordersItem.value}>
                 <View><Text>{ordersItem.label}:</Text></View>
                 <View className="flex-1"><Text>{ordersItem.onContent?.(value) ?? value}</Text></View>
             </View>
@@ -31,14 +32,13 @@ export const NotifyItem = ({ item }: { item: Notify }) => {
 }
 
 export default function Home() {
-    const router = useRouter();
     const { isNotifyPermitted: isPermitted, notify, updateStates } = useStates();
     const [notifys, setNotifys] = useState<Notify[]>([]);
 
     useEffect(() => {
-        if(notify) {
+        if (notify) {
             setNotifys(prev => take(uniqBy([notify, ...prev], 'hashId'), MAX_NOTIFY_COUNT))
-            updateStates({notify: null})
+            updateStates({ notify: null })
         }
     }, [notify])
 
@@ -50,27 +50,19 @@ export default function Home() {
     const onOpenSettings = () => {
         openNotificationSettings()
     };
-    const onSwitchPacakge = () => {
-        router.push('switch-package');
-    };
-    return (<SafeAreaView className="flex flex-1 overflow-hidden flex-col">
-        <StatusBar backgroundColor={'#fff'} barStyle={'dark-content'} />
+    return <Container
+        icon={isPermitted ? 'setting' : null}
+        route="switch-package"
+        title="Notify history">
         {!isPermitted && <View className="flex flex-1 items-center justify-center">
             <Button onPress={onOpenSettings} title="Open Settings" />
         </View>}
-        {isPermitted && <>
-            <View className="flex flex-row items-center justify-between px-4 py-[13]">
-                <View className="w-[30]" />
-                <Text className="text-2xl">Notify history</Text>
-                <IconFont onPress={onSwitchPacakge} size={30} name="setting" />
-            </View>
-            <View className={!notifys?.length ? 'flex-1 items-center justify-center' : 'flex-1'}>
-                {isPermitted && !notifys?.length && <>
-                    <View className="-mt-20"><IconFont size={150} name="empty" /></View>
-                    <Text className="mt-4 text-xl text-gray-600">No any Notifies</Text>
-                </>}
-                {isPermitted && !!notifys?.length && notifyList}
-            </View>
-        </>}
-    </SafeAreaView>);
+        {isPermitted && <View className={!notifys?.length ? 'flex-1 items-center justify-center' : 'flex-1'}>
+            {isPermitted && !notifys?.length && <>
+                <View className="-mt-20"><IconFont size={150} name="empty" /></View>
+                <Text className="mt-4 text-xl text-gray-600">No any Notifies</Text>
+            </>}
+            {isPermitted && !!notifys?.length && notifyList}
+        </View>}
+    </Container>
 }
